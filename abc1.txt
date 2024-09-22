@@ -1,0 +1,44 @@
+import requests
+import hashlib
+import hmac
+import base64
+from time import gmtime, strftime
+
+# Amazon credentials and details (replace these with your credentials)
+access_key = "YOUR_ACCESS_KEY"
+secret_key = "YOUR_SECRET_KEY"
+associate_tag = "YOUR_ASSOCIATE_TAG"
+region = "us-east-1"
+service = "AWSECommerceService"
+host = "webservices.amazon.com"
+
+# Function to generate a request to the API
+def sign_request(params, secret_key):
+    sorted_params = "&".join(sorted(f"{key}={params[key]}" for key in params))
+    string_to_sign = f"GET\n{host}\n/onca/xml\n{sorted_params}"
+    
+    signature = hmac.new(secret_key.encode('utf-8'), string_to_sign.encode('utf-8'), hashlib.sha256).digest()
+    signature = base64.b64encode(signature).decode('utf-8')
+    
+    return signature
+
+# Create request parameters
+params = {
+    "Service": "AWSECommerceService",
+    "Operation": "ItemSearch",
+    "AWSAccessKeyId": access_key,
+    "AssociateTag": associate_tag,
+    "SearchIndex": "Books",
+    "Keywords": "Python programming",
+    "Timestamp": strftime("%Y-%m-%dT%H:%M:%SZ", gmtime()),
+    "ResponseGroup": "Images,ItemAttributes,Offers"
+}
+
+# Sign the request
+params["Signature"] = sign_request(params, secret_key)
+
+# Send the request to Amazon's API
+response = requests.get(f"https://{host}/onca/xml", params=params)
+
+# Print the response
+print(response.text)
